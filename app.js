@@ -387,6 +387,38 @@ function deleteSource(id) {
     saveSources(sources);
 }
 
+function addSourceUpdate(sourceId, date, content) {
+    const sources = getSources();
+    const source = sources.find(s => s.id === sourceId);
+    if (!source) return null;
+    
+    if (!source.updates) {
+        source.updates = [];
+    }
+    
+    source.updates.unshift({
+        date: date || new Date().toISOString().split('T')[0],
+        content: content
+    });
+    
+    saveSources(sources);
+    return source;
+}
+
+function deleteSourceUpdate(sourceId, updateIndex) {
+    if (!confirm('确定要删除这条更新记录吗？')) return;
+    
+    const sources = getSources();
+    const source = sources.find(s => s.id === sourceId);
+    if (!source || !source.updates) return;
+    
+    source.updates.splice(updateIndex, 1);
+    saveSources(sources);
+    
+    // 重新渲染详情页
+    viewSource(sourceId);
+}
+
 // ========== 标签管理 ==========
 function getTags() {
     return JSON.parse(localStorage.getItem(DB_KEYS.tags) || '[]');
@@ -519,46 +551,66 @@ function renderAISources() {
     const sources = getSources().filter(s => s.category === 'ai');
     const container = document.getElementById('aiSourcesList');
     
-    container.innerHTML = sources.map(source => `
-        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-            <div class="flex justify-between items-start mb-3">
-                <h3 class="text-xl font-bold">${source.name}</h3>
-                <div class="btn-group">
-                    <button onclick="editSource('${source.id}')" class="text-purple-600 hover:underline text-sm">编辑</button>
-                    <button onclick="confirmDelete('source', '${source.id}')" class="text-red-600 hover:underline text-sm">删除</button>
+    container.innerHTML = sources.map(source => {
+        const lastUpdate = source.updates && source.updates.length > 0 
+            ? source.updates[0].date 
+            : source.createdAt;
+        
+        return `
+            <div class="bg-white rounded-lg shadow hover:shadow-md transition cursor-pointer" onclick="viewSource('${source.id}')">
+                <div class="p-4 flex justify-between items-center">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-lg font-semibold text-gray-800">${source.name}</h3>
+                            <span class="tag tag-purple text-xs">${getTypeLabel(source.type)}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mt-1">${source.description}</p>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>📅 ${lastUpdate}</span>
+                        <span class="text-purple-600">查看 →</span>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-2 mb-2">
-                <span class="tag tag-purple">${getTypeLabel(source.type)}</span>
-                <span class="text-gray-500">${source.platform}</span>
-            </div>
-            <p class="text-gray-600 mb-3">${source.description}</p>
-            ${source.link ? `<a href="${source.link}" target="_blank" class="text-purple-600 hover:underline text-sm">访问链接 →</a>` : ''}
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    if (sources.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 py-12">暂无 AI 信息源</div>';
+    }
 }
 
 function renderInvestSources() {
     const sources = getSources().filter(s => s.category === 'invest');
     const container = document.getElementById('investSourcesList');
     
-    container.innerHTML = sources.map(source => `
-        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-            <div class="flex justify-between items-start mb-3">
-                <h3 class="text-xl font-bold">${source.name}</h3>
-                <div class="btn-group">
-                    <button onclick="editSource('${source.id}')" class="text-green-600 hover:underline text-sm">编辑</button>
-                    <button onclick="confirmDelete('source', '${source.id}')" class="text-red-600 hover:underline text-sm">删除</button>
+    container.innerHTML = sources.map(source => {
+        const lastUpdate = source.updates && source.updates.length > 0 
+            ? source.updates[0].date 
+            : source.createdAt;
+        
+        return `
+            <div class="bg-white rounded-lg shadow hover:shadow-md transition cursor-pointer" onclick="viewSource('${source.id}')">
+                <div class="p-4 flex justify-between items-center">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-lg font-semibold text-gray-800">${source.name}</h3>
+                            <span class="tag tag-green text-xs">${getTypeLabel(source.type)}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mt-1">${source.description}</p>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>📅 ${lastUpdate}</span>
+                        <span class="text-green-600">查看 →</span>
+                    </div>
                 </div>
             </div>
-            <div class="flex items-center space-x-2 mb-2">
-                <span class="tag tag-green">${getTypeLabel(source.type)}</span>
-                <span class="text-gray-500">${source.platform}</span>
-            </div>
-            <p class="text-gray-600 mb-3">${source.description}</p>
-            ${source.link ? `<a href="${source.link}" target="_blank" class="text-green-600 hover:underline text-sm">访问链接 →</a>` : ''}
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    if (sources.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 py-12">暂无投资信息源</div>';
+    }
 }
 
 function renderTags() {
@@ -666,6 +718,12 @@ function openModal(type, id = null, category = null) {
     } else if (type === 'view') {
         title.textContent = '查看报告';
         content.innerHTML = getViewReport(id);
+    } else if (type === 'source-view') {
+        title.textContent = '信息源详情';
+        content.innerHTML = getViewSource(id);
+    } else if (type === 'add-update') {
+        title.textContent = '添加更新记录';
+        content.innerHTML = getAddUpdateForm(id);
     }
     
     modal.classList.remove('hidden');
@@ -801,6 +859,41 @@ function getSourceForm(id = null, category = null) {
     `;
 }
 
+function getAddUpdateForm(sourceId) {
+    const source = getSources().find(s => s.id === sourceId);
+    if (!source) return '<p>信息源不存在</p>';
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    return `
+        <form onsubmit="saveUpdateForm(event, '${sourceId}')">
+            <div class="form-group">
+                <label class="form-label">信息源：${source.name}</label>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">更新日期</label>
+                <input type="date" name="date" value="${today}" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">更新内容（支持HTML）</label>
+                <textarea name="content" class="form-textarea" required 
+                          placeholder="输入信息源的更新内容..."></textarea>
+            </div>
+            
+            <div class="btn-group justify-end">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    `;
+}
+
+function addSourceUpdate(sourceId) {
+    openModal('add-update', sourceId);
+}
+
 function getTagForm() {
     return `
         <form onsubmit="saveTagForm(event)">
@@ -873,6 +966,74 @@ function getViewReport(id) {
     `;
 }
 
+function getViewSource(id) {
+    const source = getSources().find(s => s.id === id);
+    if (!source) return '<p>信息源不存在</p>';
+    
+    const updates = source.updates || [];
+    const tagColor = source.category === 'ai' ? 'purple' : 'green';
+    
+    return `
+        <div>
+            <div class="mb-6">
+                <div class="flex items-center space-x-3 mb-2">
+                    <h3 class="text-2xl font-bold">${source.name}</h3>
+                    <span class="tag tag-${tagColor}">${getTypeLabel(source.type)}</span>
+                </div>
+                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                    <span>📍 ${source.platform}</span>
+                    ${source.link ? `<a href="${source.link}" target="_blank" class="text-blue-600 hover:underline">访问链接 →</a>` : ''}
+                </div>
+                <p class="text-gray-600 mt-3">${source.description}</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    ${source.tags.map(tagId => `
+                        <span class="tag tag-${getTagColor(tagId)}">${getTagName(tagId)}</span>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="border-t pt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-semibold">📝 更新记录</h4>
+                    <button onclick="addSourceUpdate('${source.id}')" class="text-${tagColor}-600 hover:underline text-sm">
+                        + 添加更新
+                    </button>
+                </div>
+                
+                ${updates.length > 0 ? `
+                    <div class="space-y-4">
+                        ${updates.map((update, index) => `
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <span class="text-sm font-semibold text-gray-700">${update.date}</span>
+                                    <button onclick="deleteSourceUpdate('${source.id}', ${index})" 
+                                            class="text-red-600 hover:text-red-800 text-xs">删除</button>
+                                </div>
+                                <div class="text-gray-700 prose max-w-none">
+                                    ${update.content}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="text-center text-gray-500 py-8">
+                        暂无更新记录
+                    </div>
+                `}
+            </div>
+            
+            <div class="text-sm text-gray-500 mt-6">
+                <p>创建: ${source.createdAt}</p>
+            </div>
+            
+            <div class="btn-group justify-end mt-4">
+                <button onclick="closeModal()" class="btn btn-secondary">关闭</button>
+                <button onclick="closeModal(); editSource('${source.id}')" class="btn btn-primary">编辑信息源</button>
+            </div>
+        </div>
+    `;
+}
+
 // ========== 表单处理 ==========
 function saveReportForm(event, id) {
     event.preventDefault();
@@ -938,6 +1099,19 @@ function saveTagForm(event) {
     showSection('tags');
 }
 
+function saveUpdateForm(event, sourceId) {
+    event.preventDefault();
+    const form = event.target;
+    const date = form.date.value;
+    const content = form.content.value;
+    
+    addSourceUpdate(sourceId, date, content);
+    closeModal();
+    
+    // 重新打开信息源详情页
+    viewSource(sourceId);
+}
+
 // ========== 操作函数 ==========
 function viewReport(id) {
     openModal('view', id);
@@ -946,6 +1120,10 @@ function viewReport(id) {
 
 function editReport(id) {
     openModal('report', id);
+}
+
+function viewSource(id) {
+    openModal('source-view', id);
 }
 
 function editSource(id) {
