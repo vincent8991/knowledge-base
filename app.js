@@ -23,6 +23,31 @@ function initializeData() {
     
     // 迁移旧数据（如果存在）
     migrateOldData();
+    
+    // 迁移信息源数据（添加category字段）
+    migrateSourcesCategory();
+}
+
+// 迁移信息源数据，添加category字段
+function migrateSourcesCategory() {
+    const sources = getSources();
+    let needsUpdate = false;
+    
+    sources.forEach(source => {
+        if (!source.category) {
+            // 根据type推断category
+            if (source.type === 'ai' || source.type === 'tech' || source.type === 'official') {
+                source.category = 'ai';
+            } else {
+                source.category = 'invest';
+            }
+            needsUpdate = true;
+        }
+    });
+    
+    if (needsUpdate) {
+        saveSources(sources);
+    }
 }
 
 // 获取默认标签
@@ -145,6 +170,7 @@ function migrateOldData() {
             {
                 id: generateId(),
                 name: '一凌策略研究',
+                category: 'invest',
                 type: 'strategy',
                 platform: '公众号',
                 link: '',
@@ -154,7 +180,41 @@ function migrateOldData() {
             },
             {
                 id: generateId(),
+                name: '中金点晴',
+                category: 'invest',
+                type: 'strategy',
+                platform: '公众号',
+                link: '',
+                description: '中金公司宏观策略研究',
+                tags: ['strategy'],
+                createdAt: '2026-02-24'
+            },
+            {
+                id: generateId(),
+                name: '培风客',
+                category: 'invest',
+                type: 'research',
+                platform: '公众号',
+                link: '',
+                description: '投研观点与市场分析',
+                tags: ['strategy'],
+                createdAt: '2026-02-24'
+            },
+            {
+                id: generateId(),
+                name: '卫斯李的投研笔记',
+                category: 'invest',
+                type: 'research',
+                platform: '公众号',
+                link: '',
+                description: '投资研究与行业分析',
+                tags: ['strategy'],
+                createdAt: '2026-02-24'
+            },
+            {
+                id: generateId(),
                 name: '机器之心',
+                category: 'ai',
                 type: 'ai',
                 platform: '公众号/网站',
                 link: 'https://www.jiqizhixin.com/',
@@ -164,7 +224,52 @@ function migrateOldData() {
             },
             {
                 id: generateId(),
+                name: '量子位',
+                category: 'ai',
+                type: 'ai',
+                platform: '公众号/网站',
+                link: 'https://www.qbitai.com/',
+                description: 'AI前沿技术与产业动态',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-24'
+            },
+            {
+                id: generateId(),
+                name: 'OpenAI Blog',
+                category: 'ai',
+                type: 'official',
+                platform: '官网',
+                link: 'https://openai.com/blog',
+                description: 'GPT系列模型官方动态',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                name: 'Anthropic Blog',
+                category: 'ai',
+                type: 'official',
+                platform: '官网',
+                link: 'https://www.anthropic.com/',
+                description: 'Claude系列模型官方动态',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                name: 'Hacker News',
+                category: 'ai',
+                type: 'tech',
+                platform: '网站',
+                link: 'https://news.ycombinator.com/',
+                description: '科技热门、AI工具发布',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
                 name: '洛图科技',
+                category: 'invest',
                 type: 'industry',
                 platform: '网站/公众号',
                 link: '',
@@ -174,12 +279,24 @@ function migrateOldData() {
             },
             {
                 id: generateId(),
-                name: 'Hacker News',
-                type: 'tech',
+                name: 'WitsView',
+                category: 'invest',
+                type: 'industry',
                 platform: '网站',
-                link: 'https://news.ycombinator.com/',
-                description: '科技热门、AI工具发布',
-                tags: ['ai-chip'],
+                link: '',
+                description: '面板价格追踪',
+                tags: ['display'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                name: '巨潮资讯',
+                category: 'invest',
+                type: 'industry',
+                platform: '网站',
+                link: 'http://www.cninfo.com.cn/',
+                description: '上市公司公告、财报',
+                tags: ['strategy'],
                 createdAt: '2026-02-21'
             }
         ];
@@ -316,7 +433,8 @@ function showSection(sectionId) {
     
     // 渲染对应内容
     if (sectionId === 'reports') renderReports();
-    if (sectionId === 'sources') renderSources();
+    if (sectionId === 'ai-sources') renderAISources();
+    if (sectionId === 'invest-sources') renderInvestSources();
     if (sectionId === 'tags') renderTags();
     if (sectionId === 'home') renderHome();
 }
@@ -326,9 +444,14 @@ function renderHome() {
     const sources = getSources();
     const tags = getTags();
     
+    // 分别统计 AI 和投资信息源
+    const aiSources = sources.filter(s => s.category === 'ai');
+    const investSources = sources.filter(s => s.category === 'invest');
+    
     // 更新统计
     document.getElementById('stat-reports').textContent = reports.length;
-    document.getElementById('stat-sources').textContent = sources.length;
+    document.getElementById('stat-ai-sources').textContent = aiSources.length;
+    document.getElementById('stat-invest-sources').textContent = investSources.length;
     document.getElementById('stat-tags').textContent = tags.length;
     
     // 本月更新
@@ -392,25 +515,48 @@ function renderReports(filteredReports = null) {
     updateFilterTags();
 }
 
-function renderSources() {
-    const sources = getSources();
-    const container = document.getElementById('sourcesList');
+function renderAISources() {
+    const sources = getSources().filter(s => s.category === 'ai');
+    const container = document.getElementById('aiSourcesList');
     
     container.innerHTML = sources.map(source => `
         <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
             <div class="flex justify-between items-start mb-3">
                 <h3 class="text-xl font-bold">${source.name}</h3>
                 <div class="btn-group">
-                    <button onclick="editSource('${source.id}')" class="text-blue-600 hover:underline text-sm">编辑</button>
+                    <button onclick="editSource('${source.id}')" class="text-purple-600 hover:underline text-sm">编辑</button>
                     <button onclick="confirmDelete('source', '${source.id}')" class="text-red-600 hover:underline text-sm">删除</button>
                 </div>
             </div>
             <div class="flex items-center space-x-2 mb-2">
-                <span class="tag tag-blue">${getTypeLabel(source.type)}</span>
+                <span class="tag tag-purple">${getTypeLabel(source.type)}</span>
                 <span class="text-gray-500">${source.platform}</span>
             </div>
             <p class="text-gray-600 mb-3">${source.description}</p>
-            ${source.link ? `<a href="${source.link}" target="_blank" class="text-blue-600 hover:underline text-sm">访问链接 →</a>` : ''}
+            ${source.link ? `<a href="${source.link}" target="_blank" class="text-purple-600 hover:underline text-sm">访问链接 →</a>` : ''}
+        </div>
+    `).join('');
+}
+
+function renderInvestSources() {
+    const sources = getSources().filter(s => s.category === 'invest');
+    const container = document.getElementById('investSourcesList');
+    
+    container.innerHTML = sources.map(source => `
+        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+            <div class="flex justify-between items-start mb-3">
+                <h3 class="text-xl font-bold">${source.name}</h3>
+                <div class="btn-group">
+                    <button onclick="editSource('${source.id}')" class="text-green-600 hover:underline text-sm">编辑</button>
+                    <button onclick="confirmDelete('source', '${source.id}')" class="text-red-600 hover:underline text-sm">删除</button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 mb-2">
+                <span class="tag tag-green">${getTypeLabel(source.type)}</span>
+                <span class="text-gray-500">${source.platform}</span>
+            </div>
+            <p class="text-gray-600 mb-3">${source.description}</p>
+            ${source.link ? `<a href="${source.link}" target="_blank" class="text-green-600 hover:underline text-sm">访问链接 →</a>` : ''}
         </div>
     `).join('');
 }
@@ -480,12 +626,20 @@ function handleSearch(query) {
         resultsDiv.innerHTML = results.map(result => {
             const item = result.item;
             const title = item.title || item.name;
-            const type = item.type === 'report' ? '📊 报告' : '📡 信息源';
+            
+            let typeLabel = '';
+            if (item.type === 'report') {
+                typeLabel = '📊 报告';
+            } else if (item.category === 'ai') {
+                typeLabel = '🤖 AI信息源';
+            } else {
+                typeLabel = '📈 投资信息源';
+            }
             
             return `
                 <div class="search-result-item" onclick="${item.type === 'report' ? `viewReport('${item.id}')` : `editSource('${item.id}')`}">
                     <div class="font-semibold">${title}</div>
-                    <div class="text-sm text-gray-500">${type}</div>
+                    <div class="text-sm text-gray-500">${typeLabel}</div>
                 </div>
             `;
         }).join('');
@@ -495,7 +649,7 @@ function handleSearch(query) {
 }
 
 // ========== 模态框 ==========
-function openModal(type, id = null) {
+function openModal(type, id = null, category = null) {
     const modal = document.getElementById('modal');
     const title = document.getElementById('modalTitle');
     const content = document.getElementById('modalContent');
@@ -505,7 +659,7 @@ function openModal(type, id = null) {
         content.innerHTML = getReportForm(id);
     } else if (type === 'source') {
         title.textContent = id ? '编辑信息源' : '新建信息源';
-        content.innerHTML = getSourceForm(id);
+        content.innerHTML = getSourceForm(id, category);
     } else if (type === 'tag') {
         title.textContent = '新建标签';
         content.innerHTML = getTagForm();
@@ -579,12 +733,26 @@ function getReportForm(id = null) {
     `;
 }
 
-function getSourceForm(id = null) {
+function getSourceForm(id = null, category = null) {
     const source = id ? getSources().find(s => s.id === id) : null;
     const tags = getTags();
+    const sourceCategory = source?.category || category || 'invest';
+    
+    // 根据分类显示不同的类型选项
+    const typeOptions = sourceCategory === 'ai' ? `
+        <option value="ai" ${source?.type === 'ai' ? 'selected' : ''}>AI动态</option>
+        <option value="official" ${source?.type === 'official' ? 'selected' : ''}>官方动态</option>
+        <option value="tech" ${source?.type === 'tech' ? 'selected' : ''}>科技动态</option>
+    ` : `
+        <option value="strategy" ${source?.type === 'strategy' ? 'selected' : ''}>策略研究</option>
+        <option value="research" ${source?.type === 'research' ? 'selected' : ''}>投研观点</option>
+        <option value="industry" ${source?.type === 'industry' ? 'selected' : ''}>行业研究</option>
+    `;
     
     return `
-        <form onsubmit="saveSourceForm(event, '${id || ''}')">
+        <form onsubmit="saveSourceForm(event, '${id || ''}', '${sourceCategory}')">
+            <input type="hidden" name="category" value="${sourceCategory}">
+            
             <div class="form-group">
                 <label class="form-label">名称</label>
                 <input type="text" name="name" value="${source?.name || ''}" class="form-input" required>
@@ -593,10 +761,7 @@ function getSourceForm(id = null) {
             <div class="form-group">
                 <label class="form-label">类型</label>
                 <select name="type" class="form-select">
-                    <option value="strategy" ${source?.type === 'strategy' ? 'selected' : ''}>策略研究</option>
-                    <option value="ai" ${source?.type === 'ai' ? 'selected' : ''}>AI动态</option>
-                    <option value="industry" ${source?.type === 'industry' ? 'selected' : ''}>行业研究</option>
-                    <option value="tech" ${source?.type === 'tech' ? 'selected' : ''}>科技动态</option>
+                    ${typeOptions}
                 </select>
             </div>
             
@@ -731,11 +896,12 @@ function saveReportForm(event, id) {
     showSection('reports');
 }
 
-function saveSourceForm(event, id) {
+function saveSourceForm(event, id, category) {
     event.preventDefault();
     const form = event.target;
     const data = {
         name: form.name.value,
+        category: form.category.value,
         type: form.type.value,
         platform: form.platform.value,
         link: form.link.value,
@@ -750,7 +916,13 @@ function saveSourceForm(event, id) {
     }
     
     closeModal();
-    showSection('sources');
+    
+    // 根据分类跳转到对应页面
+    if (data.category === 'ai') {
+        showSection('ai-sources');
+    } else {
+        showSection('invest-sources');
+    }
 }
 
 function saveTagForm(event) {
@@ -802,9 +974,11 @@ function getTypeLabel(type) {
         sell: '卖出',
         watch: '观察',
         strategy: '策略研究',
+        research: '投研观点',
         ai: 'AI动态',
         industry: '行业研究',
-        tech: '科技动态'
+        tech: '科技动态',
+        official: '官方动态'
     };
     return labels[type] || type;
 }

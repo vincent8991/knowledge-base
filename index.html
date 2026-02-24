@@ -17,9 +17,9 @@
                     <h1 class="text-2xl font-bold text-blue-600">🦞 知识库</h1>
                     <div class="hidden md:flex space-x-4">
                         <button onclick="showSection('home')" class="nav-btn active" data-section="home">首页</button>
+                        <button onclick="showSection('ai-sources')" class="nav-btn" data-section="ai-sources">AI信息源</button>
+                        <button onclick="showSection('invest-sources')" class="nav-btn" data-section="invest-sources">投资信息源</button>
                         <button onclick="showSection('reports')" class="nav-btn" data-section="reports">公司报告</button>
-                        <button onclick="showSection('sources')" class="nav-btn" data-section="sources">信息源</button>
-                        <button onclick="showSection('tags')" class="nav-btn" data-section="tags">标签</button>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -49,21 +49,25 @@
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                 <div class="bg-white p-6 rounded-lg shadow">
                     <div class="text-3xl font-bold text-blue-600" id="stat-reports">0</div>
                     <div class="text-gray-600">公司报告</div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <div class="text-3xl font-bold text-green-600" id="stat-sources">0</div>
-                    <div class="text-gray-600">信息源</div>
+                    <div class="text-3xl font-bold text-purple-600" id="stat-ai-sources">0</div>
+                    <div class="text-gray-600">AI信息源</div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <div class="text-3xl font-bold text-purple-600" id="stat-tags">0</div>
+                    <div class="text-3xl font-bold text-green-600" id="stat-invest-sources">0</div>
+                    <div class="text-gray-600">投资信息源</div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-3xl font-bold text-orange-600" id="stat-tags">0</div>
                     <div class="text-gray-600">标签</div>
                 </div>
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <div class="text-3xl font-bold text-orange-600" id="stat-updates">0</div>
+                    <div class="text-3xl font-bold text-red-600" id="stat-updates">0</div>
                     <div class="text-gray-600">本月更新</div>
                 </div>
             </div>
@@ -75,18 +79,23 @@
             </div>
 
             <!-- Quick Actions -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button onclick="showSection('ai-sources')" class="bg-purple-50 hover:bg-purple-100 p-6 rounded-lg border-2 border-purple-200 transition">
+                    <div class="text-4xl mb-2">🤖</div>
+                    <div class="font-bold text-lg">AI信息源</div>
+                    <div class="text-gray-600 text-sm">AI学习与技术动态</div>
+                </button>
+                <button onclick="showSection('invest-sources')" class="bg-green-50 hover:bg-green-100 p-6 rounded-lg border-2 border-green-200 transition">
+                    <div class="text-4xl mb-2">📈</div>
+                    <div class="font-bold text-lg">投资信息源</div>
+                    <div class="text-gray-600 text-sm">策略研究与行业观点</div>
+                </button>
                 <button onclick="showSection('reports')" class="bg-blue-50 hover:bg-blue-100 p-6 rounded-lg border-2 border-blue-200 transition">
                     <div class="text-4xl mb-2">📊</div>
                     <div class="font-bold text-lg">公司报告</div>
                     <div class="text-gray-600 text-sm">查看所有研究报告</div>
                 </button>
-                <button onclick="showSection('sources')" class="bg-green-50 hover:bg-green-100 p-6 rounded-lg border-2 border-green-200 transition">
-                    <div class="text-4xl mb-2">📡</div>
-                    <div class="font-bold text-lg">信息源</div>
-                    <div class="text-gray-600 text-sm">AI学习 + 投资研究</div>
-                </button>
-                <button onclick="showSection('tags')" class="bg-purple-50 hover:bg-purple-100 p-6 rounded-lg border-2 border-purple-200 transition">
+                <button onclick="showSection('tags')" class="bg-orange-50 hover:bg-orange-100 p-6 rounded-lg border-2 border-orange-200 transition">
                     <div class="text-4xl mb-2">🏷️</div>
                     <div class="font-bold text-lg">标签管理</div>
                     <div class="text-gray-600 text-sm">按标签分类查看</div>
@@ -110,15 +119,26 @@
             <div id="reportsList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </section>
 
-        <!-- Sources Section -->
-        <section id="sources" class="section hidden">
+        <!-- AI Sources Section -->
+        <section id="ai-sources" class="section hidden">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-3xl font-bold">📡 信息源</h2>
-                <button onclick="openModal('source')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                    + 新建信息源
+                <h2 class="text-3xl font-bold">🤖 AI信息源</h2>
+                <button onclick="openModal('source', null, 'ai')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    + 新建AI信息源
                 </button>
             </div>
-            <div id="sourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            <div id="aiSourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <!-- Investment Sources Section -->
+        <section id="invest-sources" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">📈 投资信息源</h2>
+                <button onclick="openModal('source', null, 'invest')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    + 新建投资信息源
+                </button>
+            </div>
+            <div id="investSourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </section>
 
         <!-- Tags Section -->
