@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI×投资 知识库</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-blue-600">🦞 知识库</h1>
+                    <div class="hidden md:flex space-x-4">
+                        <button onclick="showSection('home')" class="nav-btn active" data-section="home">首页</button>
+                        <button onclick="showSection('reports')" class="nav-btn" data-section="reports">公司报告</button>
+                        <button onclick="showSection('sources')" class="nav-btn" data-section="sources">信息源</button>
+                        <button onclick="showSection('tags')" class="nav-btn" data-section="tags">标签</button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="搜索报告、标签..." 
+                               class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               oninput="handleSearch(this.value)">
+                        <div id="searchResults" class="hidden absolute top-full left-0 w-full bg-white rounded-lg shadow-lg mt-2 max-h-96 overflow-y-auto"></div>
+                    </div>
+                    <!-- Add Button -->
+                    <button onclick="openModal('report')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        + 新建
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Home Section -->
+        <section id="home" class="section">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-2">AI×投资 双轮驱动知识库</h2>
+                <p class="text-gray-600">学习AI趋势 + 掌握AI工具 + AI辅助投资</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-3xl font-bold text-blue-600" id="stat-reports">0</div>
+                    <div class="text-gray-600">公司报告</div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-3xl font-bold text-green-600" id="stat-sources">0</div>
+                    <div class="text-gray-600">信息源</div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-3xl font-bold text-purple-600" id="stat-tags">0</div>
+                    <div class="text-gray-600">标签</div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-3xl font-bold text-orange-600" id="stat-updates">0</div>
+                    <div class="text-gray-600">本月更新</div>
+                </div>
+            </div>
+
+            <!-- Recent Updates -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4">📅 最近更新</h3>
+                <div id="recentUpdates" class="space-y-3"></div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="showSection('reports')" class="bg-blue-50 hover:bg-blue-100 p-6 rounded-lg border-2 border-blue-200 transition">
+                    <div class="text-4xl mb-2">📊</div>
+                    <div class="font-bold text-lg">公司报告</div>
+                    <div class="text-gray-600 text-sm">查看所有研究报告</div>
+                </button>
+                <button onclick="showSection('sources')" class="bg-green-50 hover:bg-green-100 p-6 rounded-lg border-2 border-green-200 transition">
+                    <div class="text-4xl mb-2">📡</div>
+                    <div class="font-bold text-lg">信息源</div>
+                    <div class="text-gray-600 text-sm">AI学习 + 投资研究</div>
+                </button>
+                <button onclick="showSection('tags')" class="bg-purple-50 hover:bg-purple-100 p-6 rounded-lg border-2 border-purple-200 transition">
+                    <div class="text-4xl mb-2">🏷️</div>
+                    <div class="font-bold text-lg">标签管理</div>
+                    <div class="text-gray-600 text-sm">按标签分类查看</div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section id="reports" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">📊 公司报告</h2>
+                <div class="flex space-x-3">
+                    <select id="filterTag" onchange="filterReports()" class="px-4 py-2 border rounded-lg">
+                        <option value="">所有标签</option>
+                    </select>
+                    <button onclick="openModal('report')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        + 新建报告
+                    </button>
+                </div>
+            </div>
+            <div id="reportsList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <!-- Sources Section -->
+        <section id="sources" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">📡 信息源</h2>
+                <button onclick="openModal('source')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    + 新建信息源
+                </button>
+            </div>
+            <div id="sourcesList" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <!-- Tags Section -->
+        <section id="tags" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">🏷️ 标签管理</h2>
+                <button onclick="openModal('tag')" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    + 新建标签
+                </button>
+            </div>
+            <div id="tagsList" class="flex flex-wrap gap-3"></div>
+        </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modalTitle" class="text-2xl font-bold"></h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-3xl">&times;</button>
+                </div>
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-600">
+            <p>🦞 OpenClaw 知识库 · 最后更新：<span id="lastUpdate"></span></p>
+            <div class="mt-2 space-x-4">
+                <button onclick="exportData()" class="text-blue-600 hover:underline">导出数据</button>
+                <button onclick="importData()" class="text-blue-600 hover:underline">导入数据</button>
+            </div>
+        </div>
+    </footer>
+
+    <input type="file" id="fileInput" class="hidden" accept=".json" onchange="handleImport(event)">
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,871 @@
+// 知识库应用 - 核心逻辑
+// 使用 LocalStorage 存储数据
+
+// ========== 数据模型 ==========
+const DB_KEYS = {
+    reports: 'kb_reports',
+    sources: 'kb_sources',
+    tags: 'kb_tags',
+    lastUpdate: 'kb_lastUpdate'
+};
+
+// 初始化数据
+function initializeData() {
+    if (!localStorage.getItem(DB_KEYS.reports)) {
+        localStorage.setItem(DB_KEYS.reports, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(DB_KEYS.sources)) {
+        localStorage.setItem(DB_KEYS.sources, JSON.stringify([]));
+    }
+    if (!localStorage.getItem(DB_KEYS.tags)) {
+        localStorage.setItem(DB_KEYS.tags, JSON.stringify(getDefaultTags()));
+    }
+    
+    // 迁移旧数据（如果存在）
+    migrateOldData();
+}
+
+// 获取默认标签
+function getDefaultTags() {
+    return [
+        { id: 'ai-chip', name: 'AI芯片', color: 'blue' },
+        { id: 'display', name: '显示面板', color: 'green' },
+        { id: 'consumer', name: '消费电子', color: 'purple' },
+        { id: 'cycle', name: '周期股', color: 'orange' },
+        { id: 'strategy', name: '策略研究', color: 'red' },
+        { id: 'export', name: '出口链', color: 'gray' }
+    ];
+}
+
+// 迁移旧数据（从原始HTML提取的数据）
+function migrateOldData() {
+    const reports = getReports();
+    if (reports.length === 0) {
+        // 添加示例数据
+        const defaultReports = [
+            {
+                id: generateId(),
+                title: '京东方A (000725.SZ)',
+                type: 'buy',
+                tags: ['display', 'cycle'],
+                currentPrice: '4.18元',
+                targetPrice: '5.0-5.5元',
+                content: `
+                    <h3>投资逻辑</h3>
+                    <p>LCD现金牛 + OLED成长性，2026年折旧下行通道</p>
+                    
+                    <h3>核心观点</h3>
+                    <ul>
+                        <li>LCD周期复苏，价格企稳回升</li>
+                        <li>OLED在车载、VR等新场景渗透</li>
+                        <li>2026年折旧大幅下降，利润释放</li>
+                        <li>成都、重庆产线折旧逐步完成</li>
+                    </ul>
+                    
+                    <h3>风险因素</h3>
+                    <ul>
+                        <li>面板价格波动</li>
+                        <li>OLED渗透不及预期</li>
+                        <li>行业产能过剩</li>
+                    </ul>
+                `,
+                createdAt: '2026-02-21',
+                updatedAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                title: '泡泡玛特 (9992.HK)',
+                type: 'buy',
+                tags: ['consumer'],
+                currentPrice: '85港元',
+                targetPrice: '110港元',
+                content: `
+                    <h3>投资逻辑</h3>
+                    <p>IP生态 + 全球化，潮玩行业龙头</p>
+                    
+                    <h3>核心观点</h3>
+                    <ul>
+                        <li>头部IP持续爆款（Molly、Dimoo）</li>
+                        <li>海外扩张加速，东南亚、欧美市场</li>
+                        <li>乐园业务带来新增长点</li>
+                        <li>会员体系提升复购率</li>
+                    </ul>
+                    
+                    <h3>风险因素</h3>
+                    <ul>
+                        <li>IP老化风险</li>
+                        <li>海外扩张不及预期</li>
+                        <li>竞争加剧</li>
+                    </ul>
+                `,
+                createdAt: '2026-02-21',
+                updatedAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                title: 'Taalas芯片深度报告',
+                type: 'watch',
+                tags: ['ai-chip', 'strategy'],
+                currentPrice: '-',
+                targetPrice: '-',
+                content: `
+                    <h3>投资逻辑</h3>
+                    <p>ASIC AI推理芯片叙事 - 模型固化至硅片</p>
+                    
+                    <h3>核心技术</h3>
+                    <ul>
+                        <li>硬连线（Hard-wiring）技术</li>
+                        <li>性能：17,000 tokens/s（Llama 3.1 8B）</li>
+                        <li>成本：1/20 传统GPU</li>
+                        <li>功耗：降低90%</li>
+                    </ul>
+                    
+                    <h3>A股概念股</h3>
+                    <ul>
+                        <li>芯原股份（688521）- IP+ASIC定制</li>
+                        <li>寒武纪（688256）- AI推理龙头</li>
+                        <li>海光信息（688041）- 通用芯片</li>
+                    </ul>
+                    
+                    <h3>跟踪事项</h3>
+                    <ul>
+                        <li>首个大客户公布（6-12个月）</li>
+                        <li>量产时间表</li>
+                    </ul>
+                `,
+                createdAt: '2026-02-23',
+                updatedAt: '2026-02-23'
+            }
+        ];
+        
+        saveReports(defaultReports);
+        
+        // 添加信息源
+        const defaultSources = [
+            {
+                id: generateId(),
+                name: '一凌策略研究',
+                type: 'strategy',
+                platform: '公众号',
+                link: '',
+                description: '国金证券牟一凌团队，实物侧+中国资产框架',
+                tags: ['strategy', 'cycle'],
+                createdAt: '2026-02-23'
+            },
+            {
+                id: generateId(),
+                name: '机器之心',
+                type: 'ai',
+                platform: '公众号/网站',
+                link: 'https://www.jiqizhixin.com/',
+                description: 'AI技术动态、行业趋势',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                name: '洛图科技',
+                type: 'industry',
+                platform: '网站/公众号',
+                link: '',
+                description: '显示面板行业数据、价格追踪',
+                tags: ['display'],
+                createdAt: '2026-02-21'
+            },
+            {
+                id: generateId(),
+                name: 'Hacker News',
+                type: 'tech',
+                platform: '网站',
+                link: 'https://news.ycombinator.com/',
+                description: '科技热门、AI工具发布',
+                tags: ['ai-chip'],
+                createdAt: '2026-02-21'
+            }
+        ];
+        
+        saveSources(defaultSources);
+    }
+}
+
+// ========== 工具函数 ==========
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function updateLastUpdate() {
+    const now = new Date().toISOString().split('T')[0];
+    localStorage.setItem(DB_KEYS.lastUpdate, now);
+    document.getElementById('lastUpdate').textContent = now;
+}
+
+// ========== 报告管理 ==========
+function getReports() {
+    return JSON.parse(localStorage.getItem(DB_KEYS.reports) || '[]');
+}
+
+function saveReports(reports) {
+    localStorage.setItem(DB_KEYS.reports, JSON.stringify(reports));
+    updateLastUpdate();
+}
+
+function addReport(report) {
+    const reports = getReports();
+    report.id = generateId();
+    report.createdAt = new Date().toISOString().split('T')[0];
+    report.updatedAt = report.createdAt;
+    reports.unshift(report);
+    saveReports(reports);
+    return report;
+}
+
+function updateReport(id, updates) {
+    const reports = getReports();
+    const index = reports.findIndex(r => r.id === id);
+    if (index !== -1) {
+        reports[index] = { ...reports[index], ...updates, updatedAt: new Date().toISOString().split('T')[0] };
+        saveReports(reports);
+        return reports[index];
+    }
+    return null;
+}
+
+function deleteReport(id) {
+    const reports = getReports().filter(r => r.id !== id);
+    saveReports(reports);
+}
+
+// ========== 信息源管理 ==========
+function getSources() {
+    return JSON.parse(localStorage.getItem(DB_KEYS.sources) || '[]');
+}
+
+function saveSources(sources) {
+    localStorage.setItem(DB_KEYS.sources, JSON.stringify(sources));
+    updateLastUpdate();
+}
+
+function addSource(source) {
+    const sources = getSources();
+    source.id = generateId();
+    source.createdAt = new Date().toISOString().split('T')[0];
+    sources.unshift(source);
+    saveSources(sources);
+    return source;
+}
+
+function updateSource(id, updates) {
+    const sources = getSources();
+    const index = sources.findIndex(s => s.id === id);
+    if (index !== -1) {
+        sources[index] = { ...sources[index], ...updates };
+        saveSources(sources);
+        return sources[index];
+    }
+    return null;
+}
+
+function deleteSource(id) {
+    const sources = getSources().filter(s => s.id !== id);
+    saveSources(sources);
+}
+
+// ========== 标签管理 ==========
+function getTags() {
+    return JSON.parse(localStorage.getItem(DB_KEYS.tags) || '[]');
+}
+
+function saveTags(tags) {
+    localStorage.setItem(DB_KEYS.tags, JSON.stringify(tags));
+}
+
+function addTag(tag) {
+    const tags = getTags();
+    tag.id = generateId();
+    tags.push(tag);
+    saveTags(tags);
+    return tag;
+}
+
+function deleteTag(id) {
+    const tags = getTags().filter(t => t.id !== id);
+    saveTags(tags);
+}
+
+function getTagName(tagId) {
+    const tag = getTags().find(t => t.id === tagId);
+    return tag ? tag.name : tagId;
+}
+
+function getTagColor(tagId) {
+    const tag = getTags().find(t => t.id === tagId);
+    return tag ? tag.color : 'gray';
+}
+
+// ========== UI 渲染 ==========
+function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+    document.getElementById(sectionId).classList.remove('hidden');
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.section === sectionId) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // 渲染对应内容
+    if (sectionId === 'reports') renderReports();
+    if (sectionId === 'sources') renderSources();
+    if (sectionId === 'tags') renderTags();
+    if (sectionId === 'home') renderHome();
+}
+
+function renderHome() {
+    const reports = getReports();
+    const sources = getSources();
+    const tags = getTags();
+    
+    // 更新统计
+    document.getElementById('stat-reports').textContent = reports.length;
+    document.getElementById('stat-sources').textContent = sources.length;
+    document.getElementById('stat-tags').textContent = tags.length;
+    
+    // 本月更新
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const monthlyUpdates = reports.filter(r => r.updatedAt.startsWith(thisMonth)).length;
+    document.getElementById('stat-updates').textContent = monthlyUpdates;
+    
+    // 最近更新
+    const recentUpdates = document.getElementById('recentUpdates');
+    const recent = reports.slice(0, 5);
+    recentUpdates.innerHTML = recent.map(r => `
+        <div class="timeline-item">
+            <div class="timeline-date">${r.updatedAt}</div>
+            <div class="timeline-content">
+                <strong class="cursor-pointer hover:text-blue-600" onclick="viewReport('${r.id}')">${r.title}</strong>
+                <p class="text-sm text-gray-600">${r.content.replace(/<[^>]+>/g, '').slice(0, 80)}...</p>
+            </div>
+        </div>
+    `).join('');
+    
+    updateLastUpdate();
+}
+
+function renderReports(filteredReports = null) {
+    const reports = filteredReports || getReports();
+    const container = document.getElementById('reportsList');
+    
+    container.innerHTML = reports.map(report => `
+        <div class="report-card">
+            <div class="report-card-header">
+                <div>
+                    <h3 class="report-card-title cursor-pointer hover:text-blue-600" onclick="viewReport('${report.id}')">${report.title}</h3>
+                    <div class="flex items-center space-x-2 mt-1">
+                        <span class="badge badge-${report.type}">${getTypeLabel(report.type)}</span>
+                        ${report.tags.map(tagId => `
+                            <span class="tag tag-${getTagColor(tagId)}">${getTagName(tagId)}</span>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="text-right">
+                    ${report.currentPrice !== '-' ? `<div class="text-lg font-bold">${report.currentPrice}</div>` : ''}
+                    ${report.targetPrice !== '-' ? `<div class="text-sm text-gray-500">目标: ${report.targetPrice}</div>` : ''}
+                </div>
+            </div>
+            <div class="report-card-body">
+                ${report.content.replace(/<[^>]+>/g, '').slice(0, 150)}...
+            </div>
+            <div class="flex justify-between items-center text-sm text-gray-500">
+                <div class="report-card-meta">
+                    <span>📅 ${report.updatedAt}</span>
+                </div>
+                <div class="btn-group">
+                    <button onclick="editReport('${report.id}')" class="text-blue-600 hover:underline">编辑</button>
+                    <button onclick="confirmDelete('report', '${report.id}')" class="text-red-600 hover:underline">删除</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // 更新筛选器
+    updateFilterTags();
+}
+
+function renderSources() {
+    const sources = getSources();
+    const container = document.getElementById('sourcesList');
+    
+    container.innerHTML = sources.map(source => `
+        <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+            <div class="flex justify-between items-start mb-3">
+                <h3 class="text-xl font-bold">${source.name}</h3>
+                <div class="btn-group">
+                    <button onclick="editSource('${source.id}')" class="text-blue-600 hover:underline text-sm">编辑</button>
+                    <button onclick="confirmDelete('source', '${source.id}')" class="text-red-600 hover:underline text-sm">删除</button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 mb-2">
+                <span class="tag tag-blue">${getTypeLabel(source.type)}</span>
+                <span class="text-gray-500">${source.platform}</span>
+            </div>
+            <p class="text-gray-600 mb-3">${source.description}</p>
+            ${source.link ? `<a href="${source.link}" target="_blank" class="text-blue-600 hover:underline text-sm">访问链接 →</a>` : ''}
+        </div>
+    `).join('');
+}
+
+function renderTags() {
+    const tags = getTags();
+    const container = document.getElementById('tagsList');
+    
+    container.innerHTML = tags.map(tag => {
+        const count = getReports().filter(r => r.tags.includes(tag.id)).length;
+        return `
+            <div class="bg-white rounded-lg shadow p-4 flex items-center space-x-3">
+                <span class="tag tag-${tag.color}">${tag.name}</span>
+                <span class="text-gray-500 text-sm">${count} 篇报告</span>
+                <button onclick="confirmDelete('tag', '${tag.id}')" class="text-red-600 hover:text-red-800 ml-auto">✕</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateFilterTags() {
+    const tags = getTags();
+    const select = document.getElementById('filterTag');
+    select.innerHTML = '<option value="">所有标签</option>' + 
+        tags.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function filterReports() {
+    const tagId = document.getElementById('filterTag').value;
+    const reports = tagId ? getReports().filter(r => r.tags.includes(tagId)) : getReports();
+    renderReports(reports);
+}
+
+// ========== 搜索功能 ==========
+let fuse = null;
+
+function initSearch() {
+    const reports = getReports();
+    const sources = getSources();
+    
+    const items = [
+        ...reports.map(r => ({ type: 'report', ...r })),
+        ...sources.map(s => ({ type: 'source', ...s }))
+    ];
+    
+    fuse = new Fuse(items, {
+        keys: ['title', 'name', 'content', 'description', 'tags'],
+        includeScore: true,
+        threshold: 0.3
+    });
+}
+
+function handleSearch(query) {
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (!query.trim()) {
+        resultsDiv.classList.add('hidden');
+        return;
+    }
+    
+    initSearch();
+    const results = fuse.search(query).slice(0, 10);
+    
+    if (results.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-4 text-gray-500">未找到结果</div>';
+    } else {
+        resultsDiv.innerHTML = results.map(result => {
+            const item = result.item;
+            const title = item.title || item.name;
+            const type = item.type === 'report' ? '📊 报告' : '📡 信息源';
+            
+            return `
+                <div class="search-result-item" onclick="${item.type === 'report' ? `viewReport('${item.id}')` : `editSource('${item.id}')`}">
+                    <div class="font-semibold">${title}</div>
+                    <div class="text-sm text-gray-500">${type}</div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    resultsDiv.classList.remove('hidden');
+}
+
+// ========== 模态框 ==========
+function openModal(type, id = null) {
+    const modal = document.getElementById('modal');
+    const title = document.getElementById('modalTitle');
+    const content = document.getElementById('modalContent');
+    
+    if (type === 'report') {
+        title.textContent = id ? '编辑报告' : '新建报告';
+        content.innerHTML = getReportForm(id);
+    } else if (type === 'source') {
+        title.textContent = id ? '编辑信息源' : '新建信息源';
+        content.innerHTML = getSourceForm(id);
+    } else if (type === 'tag') {
+        title.textContent = '新建标签';
+        content.innerHTML = getTagForm();
+    } else if (type === 'view') {
+        title.textContent = '查看报告';
+        content.innerHTML = getViewReport(id);
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+function getReportForm(id = null) {
+    const report = id ? getReports().find(r => r.id === id) : null;
+    const tags = getTags();
+    
+    return `
+        <form onsubmit="saveReportForm(event, '${id || ''}')">
+            <div class="form-group">
+                <label class="form-label">标题</label>
+                <input type="text" name="title" value="${report?.title || ''}" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">评级</label>
+                <select name="type" class="form-select">
+                    <option value="buy" ${report?.type === 'buy' ? 'selected' : ''}>买入</option>
+                    <option value="hold" ${report?.type === 'hold' ? 'selected' : ''}>持有</option>
+                    <option value="sell" ${report?.type === 'sell' ? 'selected' : ''}>卖出</option>
+                    <option value="watch" ${report?.type === 'watch' ? 'selected' : ''}>观察</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">标签</label>
+                <div class="flex flex-wrap gap-2">
+                    ${tags.map(tag => `
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="tags" value="${tag.id}" 
+                                   ${report?.tags.includes(tag.id) ? 'checked' : ''} class="mr-1">
+                            <span class="tag tag-${tag.color}">${tag.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label class="form-label">当前价格</label>
+                    <input type="text" name="currentPrice" value="${report?.currentPrice || ''}" class="form-input" placeholder="4.18元">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">目标价</label>
+                    <input type="text" name="targetPrice" value="${report?.targetPrice || ''}" class="form-input" placeholder="5.0-5.5元">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">内容（支持HTML）</label>
+                <textarea name="content" class="form-textarea" required>${report?.content || ''}</textarea>
+            </div>
+            
+            <div class="btn-group justify-end">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    `;
+}
+
+function getSourceForm(id = null) {
+    const source = id ? getSources().find(s => s.id === id) : null;
+    const tags = getTags();
+    
+    return `
+        <form onsubmit="saveSourceForm(event, '${id || ''}')">
+            <div class="form-group">
+                <label class="form-label">名称</label>
+                <input type="text" name="name" value="${source?.name || ''}" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">类型</label>
+                <select name="type" class="form-select">
+                    <option value="strategy" ${source?.type === 'strategy' ? 'selected' : ''}>策略研究</option>
+                    <option value="ai" ${source?.type === 'ai' ? 'selected' : ''}>AI动态</option>
+                    <option value="industry" ${source?.type === 'industry' ? 'selected' : ''}>行业研究</option>
+                    <option value="tech" ${source?.type === 'tech' ? 'selected' : ''}>科技动态</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">平台</label>
+                <input type="text" name="platform" value="${source?.platform || ''}" class="form-input" placeholder="公众号/网站">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">链接</label>
+                <input type="url" name="link" value="${source?.link || ''}" class="form-input" placeholder="https://...">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">描述</label>
+                <textarea name="description" class="form-textarea" required>${source?.description || ''}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">标签</label>
+                <div class="flex flex-wrap gap-2">
+                    ${tags.map(tag => `
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" name="tags" value="${tag.id}" 
+                                   ${source?.tags.includes(tag.id) ? 'checked' : ''} class="mr-1">
+                            <span class="tag tag-${tag.color}">${tag.name}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="btn-group justify-end">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    `;
+}
+
+function getTagForm() {
+    return `
+        <form onsubmit="saveTagForm(event)">
+            <div class="form-group">
+                <label class="form-label">标签名称</label>
+                <input type="text" name="name" class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">颜色</label>
+                <select name="color" class="form-select">
+                    <option value="blue">蓝色</option>
+                    <option value="green">绿色</option>
+                    <option value="purple">紫色</option>
+                    <option value="orange">橙色</option>
+                    <option value="red">红色</option>
+                    <option value="gray">灰色</option>
+                </select>
+            </div>
+            
+            <div class="btn-group justify-end">
+                <button type="button" onclick="closeModal()" class="btn btn-secondary">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    `;
+}
+
+function getViewReport(id) {
+    const report = getReports().find(r => r.id === id);
+    if (!report) return '<p>报告不存在</p>';
+    
+    return `
+        <div>
+            <div class="flex items-center space-x-2 mb-4">
+                <span class="badge badge-${report.type}">${getTypeLabel(report.type)}</span>
+                ${report.tags.map(tagId => `
+                    <span class="tag tag-${getTagColor(tagId)}">${getTagName(tagId)}</span>
+                `).join('')}
+            </div>
+            
+            ${report.currentPrice !== '-' ? `
+                <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-500">当前价格</div>
+                            <div class="text-2xl font-bold">${report.currentPrice}</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500">目标价</div>
+                            <div class="text-2xl font-bold text-green-600">${report.targetPrice}</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
+            <div class="prose max-w-none mb-4">
+                ${report.content}
+            </div>
+            
+            <div class="text-sm text-gray-500">
+                <p>创建: ${report.createdAt} · 更新: ${report.updatedAt}</p>
+            </div>
+            
+            <div class="btn-group justify-end mt-4">
+                <button onclick="closeModal()" class="btn btn-secondary">关闭</button>
+                <button onclick="closeModal(); editReport('${report.id}')" class="btn btn-primary">编辑</button>
+            </div>
+        </div>
+    `;
+}
+
+// ========== 表单处理 ==========
+function saveReportForm(event, id) {
+    event.preventDefault();
+    const form = event.target;
+    const data = {
+        title: form.title.value,
+        type: form.type.value,
+        tags: Array.from(form.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value),
+        currentPrice: form.currentPrice.value || '-',
+        targetPrice: form.targetPrice.value || '-',
+        content: form.content.value
+    };
+    
+    if (id) {
+        updateReport(id, data);
+    } else {
+        addReport(data);
+    }
+    
+    closeModal();
+    showSection('reports');
+}
+
+function saveSourceForm(event, id) {
+    event.preventDefault();
+    const form = event.target;
+    const data = {
+        name: form.name.value,
+        type: form.type.value,
+        platform: form.platform.value,
+        link: form.link.value,
+        description: form.description.value,
+        tags: Array.from(form.querySelectorAll('input[name="tags"]:checked')).map(cb => cb.value)
+    };
+    
+    if (id) {
+        updateSource(id, data);
+    } else {
+        addSource(data);
+    }
+    
+    closeModal();
+    showSection('sources');
+}
+
+function saveTagForm(event) {
+    event.preventDefault();
+    const form = event.target;
+    const data = {
+        name: form.name.value,
+        color: form.color.value
+    };
+    
+    addTag(data);
+    closeModal();
+    showSection('tags');
+}
+
+// ========== 操作函数 ==========
+function viewReport(id) {
+    openModal('view', id);
+    document.getElementById('searchResults').classList.add('hidden');
+}
+
+function editReport(id) {
+    openModal('report', id);
+}
+
+function editSource(id) {
+    openModal('source', id);
+}
+
+function confirmDelete(type, id) {
+    if (confirm('确定要删除吗？此操作不可恢复。')) {
+        if (type === 'report') {
+            deleteReport(id);
+            showSection('reports');
+        } else if (type === 'source') {
+            deleteSource(id);
+            showSection('sources');
+        } else if (type === 'tag') {
+            deleteTag(id);
+            showSection('tags');
+        }
+    }
+}
+
+function getTypeLabel(type) {
+    const labels = {
+        buy: '买入',
+        hold: '持有',
+        sell: '卖出',
+        watch: '观察',
+        strategy: '策略研究',
+        ai: 'AI动态',
+        industry: '行业研究',
+        tech: '科技动态'
+    };
+    return labels[type] || type;
+}
+
+// ========== 导入导出 ==========
+function exportData() {
+    const data = {
+        reports: getReports(),
+        sources: getSources(),
+        tags: getTags(),
+        exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `knowledge-base-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importData() {
+    document.getElementById('fileInput').click();
+}
+
+function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            if (confirm(`将导入 ${data.reports?.length || 0} 个报告和 ${data.sources?.length || 0} 个信息源，是否继续？`)) {
+                if (data.reports) saveReports(data.reports);
+                if (data.sources) saveSources(data.sources);
+                if (data.tags) saveTags(data.tags);
+                
+                alert('导入成功！');
+                showSection('home');
+            }
+        } catch (error) {
+            alert('导入失败：文件格式错误');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ========== 初始化 ==========
+document.addEventListener('DOMContentLoaded', function() {
+    initializeData();
+    renderHome();
+    initSearch();
+});
+
+// 点击外部关闭搜索结果
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#searchInput') && !e.target.closest('#searchResults')) {
+        document.getElementById('searchResults').classList.add('hidden');
+    }
+});
